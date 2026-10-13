@@ -1,0 +1,106 @@
+### BuildTrack test requests
+### Open in VS Code with the "REST Client" extension and click "Send Request" above each block.
+### After creating a project / worker / assignment, paste its "id" into the variables below.
+
+@projectId = paste-project-id-here
+@workerId = paste-worker-id-here
+@assignmentId = paste-assignment-id-here
+
+############################################################
+# PROJECT SERVICE (port 3001) - where, what, when
+############################################################
+
+### Health
+GET http://localhost:3001/health
+
+### Create a project
+POST http://localhost:3001/projects
+Content-Type: application/json
+
+{
+  "name": "Maple Ridge Lot 14",
+  "address": { "street": "123 Maple Ridge Dr", "city": "Columbus", "state": "OH", "zip": "43016" },
+  "location": { "community": "Maple Ridge", "lotNumber": "14", "latitude": 40.09, "longitude": -83.11 },
+  "homeType": "two-story",
+  "deadline": "2027-03-31"
+}
+
+### List projects (optional filters: homeType, status, city)
+GET http://localhost:3001/projects?city=Columbus
+
+### Overdue projects
+GET http://localhost:3001/projects/overdue
+
+### Get one project
+GET http://localhost:3001/projects/{{projectId}}
+
+### Update a project (send all fields)
+PUT http://localhost:3001/projects/{{projectId}}
+Content-Type: application/json
+
+{
+  "name": "Maple Ridge Lot 14",
+  "address": { "street": "123 Maple Ridge Dr", "city": "Columbus", "state": "OH", "zip": "43016" },
+  "location": { "community": "Maple Ridge", "lotNumber": "14" },
+  "homeType": "two-story",
+  "deadline": "2027-03-31",
+  "status": "in-progress"
+}
+
+### Change only the deadline
+PATCH http://localhost:3001/projects/{{projectId}}/deadline
+Content-Type: application/json
+
+{ "deadline": "2027-05-15" }
+
+### Who is on this project (Project Service's own copy, kept up to date from Crew Service's "crew-events")
+GET http://localhost:3001/projects/{{projectId}}/crew
+
+### Delete a project (Project Service publishes "ProjectDeleted"; Crew Service removes its assignments)
+DELETE http://localhost:3001/projects/{{projectId}}
+
+############################################################
+# CREW SERVICE (port 3002) - who and how many
+############################################################
+
+### Health
+GET http://localhost:3002/health
+
+### Add a worker
+POST http://localhost:3002/workers
+Content-Type: application/json
+
+{ "firstName": "John", "lastName": "Smith", "phone": "614-555-0101", "trade": "framing", "role": "lead" }
+
+### List workers (optional filters: trade, active)
+GET http://localhost:3002/workers?trade=framing&active=true
+
+### Get one worker with their assignments
+GET http://localhost:3002/workers/{{workerId}}
+
+### Update a worker (send all fields)
+PUT http://localhost:3002/workers/{{workerId}}
+Content-Type: application/json
+
+{ "firstName": "John", "lastName": "Smith", "phone": "614-555-0199", "trade": "framing", "role": "lead", "active": true }
+
+### Delete a worker (also removes their assignments)
+DELETE http://localhost:3002/workers/{{workerId}}
+
+### Assign a worker to a project (Crew Service calls Project Service to check the project exists)
+POST http://localhost:3002/assignments
+Content-Type: application/json
+
+{ "workerId": "{{workerId}}", "projectId": "{{projectId}}", "startDate": "2026-10-20" }
+
+### Take a worker off a project (endDate defaults to today)
+PATCH http://localhost:3002/assignments/{{assignmentId}}/end
+Content-Type: application/json
+
+{ "endDate": "2026-11-15" }
+
+### People currently on a project
+GET http://localhost:3002/projects/{{projectId}}/workers
+
+### Headcount for a project
+GET http://localhost:3002/projects/{{projectId}}/headcount
